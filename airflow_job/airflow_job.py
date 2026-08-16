@@ -63,12 +63,12 @@ with DAG(
                 f"--origin_insights_table={origin_insights_table}",
             ]
         },
-        "runtime_config": {
+  "runtime_config": {
     "version": "2.2",
     "properties": {
-        "spark.driver.cores": "1",
+        "spark.driver.cores": "2",
         "spark.driver.memory": "2g",
-        "spark.executor.cores": "1",
+        "spark.executor.cores": "4",
         "spark.executor.memory": "2g",
         "spark.executor.instances": "2",
     },
@@ -107,7 +107,7 @@ default_args = {
     'depends_on_past': False,
     'retries': 1,
     'retry_delay': timedelta(minutes=5),
-    'start_date': datetime(2025, 5, 15),
+    'start_date': datetime(2026, 8, 16),
 }
 
 # Define the DAG
