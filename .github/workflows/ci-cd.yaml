@@ -12,46 +12,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the repository
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
-      # Authenticate to GCP
       - name: Authenticate to GCP
-        uses: google-github-actions/auth@v1
+        uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # Setup Google Cloud SDK
       - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
+        uses: google-github-actions/setup-gcloud@v3
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      # Upload `variables.json` to Composer bucket
       - name: Upload Variables JSON to GCS
         run: |
-          gsutil cp variables/dev/variables.json gs://us-central1-airflow-dev-ce3a0ac4-bucket/data/dev/variables.json
+          gsutil cp "${{ github.workspace }}/variables/dev/variables.json" gs://us-central1-airflow-dev-ce3a0ac4-bucket/data/dev/variables.json
 
-      # Import Variables into Airflow-DEV
       - name: Import Variables into Airflow-DEV
         run: |
           gcloud composer environments run airflow-dev \
             --location us-central1 \
             variables import -- /home/airflow/gcs/data/dev/variables.json
 
-      # Sync Spark job to GCS
       - name: Upload Spark Job to GCS
         run: |
-          gsutil cp spark_job/spark_transformation_job.py gs://airflow-projects-buckett/flight-booking-analysis/spark-job/
+          gsutil cp "${{ github.workspace }}/spark_job/spark_transformation_job.py" gs://airflow-projects-buckett/flight-booking-analysis/spark-job/
 
-      # Sync Airflow DAG to Airflow DEV Composer
       - name: Upload Airflow DAG to DEV Environment (Dag Folder)
         run: |
           gcloud composer environments storage dags import \
             --environment airflow-dev \
             --location us-central1 \
-            --source airflow_job/airflow_job.py
+            --source "${{ github.workspace }}/airflow_job/airflow_job.py"
 
   upload-to-prod:
     if: github.ref == 'refs/heads/main'
