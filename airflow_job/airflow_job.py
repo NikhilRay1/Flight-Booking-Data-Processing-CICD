@@ -98,84 +98,97 @@ from datetime import datetime, timedelta
 import uuid
 
 from airflow import DAG
+from airflow.models import Variable
+
 from airflow.providers.google.cloud.operators.dataproc import (
     DataprocCreateBatchOperator,
 )
-from airflow.providers.google.cloud.sensors.gcs import GCSObjectExistenceSensor
-from airflow.models import Variable
+
+from airflow.providers.google.cloud.sensors.gcs import (
+    GCSObjectExistenceSensor,
+)
 
 
-# ---------------------------------------------------------
-# Default arguments
-# ---------------------------------------------------------
+# ============================================================
+# DEFAULT ARGS
+# ============================================================
 
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
     "retries": 1,
     "retry_delay": timedelta(minutes=5),
-    "start_date": datetime(2025, 5, 15),
 }
 
 
-# ---------------------------------------------------------
+# ============================================================
 # DAG
-# ---------------------------------------------------------
+# ============================================================
 
 with DAG(
     dag_id="flight_booking_dataproc_bq_dag",
+
     default_args=default_args,
+
+    start_date=datetime(2026, 8, 16),
+
     schedule=None,
+
     catchup=False,
+
     tags=["flight-booking", "dataproc", "bigquery"],
 ) as dag:
 
-    # -----------------------------------------------------
-    # Airflow Variables
-    # -----------------------------------------------------
+    # ========================================================
+    # VARIABLES
+    # ========================================================
 
     env = Variable.get(
         "env",
-        default_var="dev",
+        default_var="dev"
     )
 
     gcs_bucket = Variable.get(
         "gcs_bucket",
-        default_var="airflow-projects-buckett",
+        default_var="airflow-projects-buckett"
     )
 
     bq_project = Variable.get(
         "bq_project",
-        default_var="nikhilgcp-502406",
+        default_var="nikhilgcp-502406"
     )
 
     bq_dataset = Variable.get(
         "bq_dataset",
-        default_var=f"flight_data_{env}",
+        default_var=f"flight_data_{env}"
     )
 
     tables = Variable.get(
         "tables",
-        deserialize_json=True,
+        deserialize_json=True
     )
 
     transformed_table = tables["transformed_table"]
+
     route_insights_table = tables["route_insights_table"]
+
     origin_insights_table = tables["origin_insights_table"]
 
 
-    # -----------------------------------------------------
-    # Unique Dataproc Serverless batch ID
-    # -----------------------------------------------------
+    # ========================================================
+    # UNIQUE BATCH ID
+    # ========================================================
 
     batch_id = (
-        f"flight-booking-batch-{env}-{str(uuid.uuid4())[:8]}"
+        f"flight-booking-batch-{env}-"
+        f"{str(uuid.uuid4())[:8]}"
     )
 
 
-    # -----------------------------------------------------
-    # Task 1: Wait for input file in GCS
-    # -----------------------------------------------------
+    # ========================================================
+    # TASK 1
+    # WAIT FOR FILE IN GCS
+    # ========================================================
 
     file_sensor = GCSObjectExistenceSensor(
         task_id="check_file_arrival",
@@ -198,15 +211,12 @@ with DAG(
     )
 
 
-    # -----------------------------------------------------
-    # Task 2: Dataproc Serverless PySpark batch
-    # -----------------------------------------------------
+    # ========================================================
+    # TASK 2
+    # DATAPROC SERVERLESS PYSPARK
+    # ========================================================
 
     batch_details = {
-
-        # -------------------------------------------------
-        # PySpark configuration
-        # -------------------------------------------------
 
         "pyspark_batch": {
 
@@ -217,64 +227,45 @@ with DAG(
                 f"spark_transformation_job.py"
             ),
 
-            "python_file_uris": [],
-
-            "jar_file_uris": [],
-
             "args": [
+
                 f"--env={env}",
+
                 f"--bq_project={bq_project}",
+
                 f"--bq_dataset={bq_dataset}",
+
                 f"--transformed_table={transformed_table}",
+
                 f"--route_insights_table={route_insights_table}",
+
                 f"--origin_insights_table={origin_insights_table}",
             ],
         },
 
 
-        # -------------------------------------------------
-        # Dataproc Serverless runtime
-        # -------------------------------------------------
+        # ====================================================
+        # DATAPROC SERVERLESS RUNTIME
+        # ====================================================
 
         "runtime_config": {
 
             "version": "2.2",
 
-            "properties": {
-
-                # Minimum supported driver CPU
-                "spark.driver.cores": "4",
-
-                # Driver memory
-                "spark.driver.memory": "4g",
-
-                # Minimum supported executor CPU
-                "spark.executor.cores": "4",
-
-                # Executor memory
-                "spark.executor.memory": "4g",
-
-                # Minimum number of executors
-                "spark.executor.instances": "2",
-
-                # Prevent autoscaling from requesting
-                # additional executors for this small project
-                "spark.dynamicAllocation.minExecutors": "2",
-                "spark.dynamicAllocation.maxExecutors": "2",
-            },
         },
 
 
-        # -------------------------------------------------
-        # Execution environment
-        # -------------------------------------------------
+        # ====================================================
+        # EXECUTION ENVIRONMENT
+        # ====================================================
 
         "environment_config": {
 
             "execution_config": {
 
                 "service_account": (
-                    "506506058788-compute@developer.gserviceaccount.com"
+                    "506506058788-compute@"
+                    "developer.gserviceaccount.com"
                 ),
 
                 "network_uri": (
@@ -287,14 +278,14 @@ with DAG(
                     "regions/us-central1/"
                     "subnetworks/default"
                 ),
-            },
+            }
         },
     }
 
 
-    # -----------------------------------------------------
-    # Submit Dataproc Serverless batch
-    # -----------------------------------------------------
+    # ========================================================
+    # CREATE DATAPROC SERVERLESS BATCH
+    # ========================================================
 
     pyspark_task = DataprocCreateBatchOperator(
 
@@ -312,8 +303,8 @@ with DAG(
     )
 
 
-    # -----------------------------------------------------
-    # Dependency
-    # -----------------------------------------------------
+    # ========================================================
+    # DEPENDENCY
+    # ========================================================
 
     file_sensor >> pyspark_task
