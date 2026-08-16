@@ -4,7 +4,7 @@ from pyspark.sql.functions import col, count, avg, when, lit, expr
 import logging
 import sys
 
-# Initialize Logging
+# Initialize Logging 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
@@ -117,3 +117,4 @@ if __name__ == "__main__":
         route_insights_table=args.route_insights_table,
         origin_insights_table=args.origin_insights_table
     )
+    #end
