@@ -336,32 +336,16 @@ with DAG(
         # DATAPROC SERVERLESS RUNTIME CONFIGURATION
         # ----------------------------------------------------
 
-        "runtime_config": {
-
-            "version": "2.2",
-
-            "properties": {
-
-                # IMPORTANT:
-                # Dataproc Serverless allows:
-                # 4, 8, or 16 cores.
-                #
-                # 1 or 2 cores will FAIL validation.
-
-                "spark.driver.cores": "4",
-
-                "spark.driver.memory": "2g",
-
-                "spark.executor.cores": "4",
-
-                "spark.executor.memory": "2g",
-
-                # Keep this low because you previously
-                # encountered a CPU quota limitation.
-
-                "spark.executor.instances": "1",
-            },
-        },
+"runtime_config": {
+    "version": "2.2",
+    "properties": {
+        "spark.driver.cores": "4",
+        "spark.driver.memory": "4g",
+        "spark.executor.cores": "4",
+        "spark.executor.memory": "4g",
+        "spark.executor.instances": "2",
+    },
+},
 
         # ----------------------------------------------------
         # EXECUTION ENVIRONMENT
